@@ -217,46 +217,47 @@ function findLinesToRemove(text, element, className, fileType) {
     const toRemove = [];
     const codeName = element.codeName;
     const xmlName = element.xmlName;
+    const nameWord = new RegExp(`\\b${codeName}\\b`);
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         switch (element.kind) {
             case 'Signal':
-                if (fileType === 'header' && /Signal<.*>\s+/.test(line) && line.includes(codeName)) {
+                if (fileType === 'header' && /Signal<.*>\s+/.test(line) && nameWord.test(line)) {
                     toRemove.push(i);
                 }
-                if (fileType === 'source' && line.includes(`${codeName}.Create(`)) {
+                if (fileType === 'source' && new RegExp(`\\b${codeName}\\.Create\\(`).test(line)) {
                     toRemove.push(i);
                 }
                 break;
             case 'Parameter':
-                if (fileType === 'header' && /CDPParameter/.test(line) && line.includes(codeName)) {
+                if (fileType === 'header' && /CDPParameter/.test(line) && nameWord.test(line)) {
                     toRemove.push(i);
                 }
-                if (fileType === 'source' && line.includes(`${codeName}.Create(`)) {
+                if (fileType === 'source' && new RegExp(`\\b${codeName}\\.Create\\(`).test(line)) {
                     toRemove.push(i);
                 }
                 break;
             case 'Alarm':
-                if (fileType === 'header' && /CDPAlarm/.test(line) && line.includes(codeName)) {
+                if (fileType === 'header' && /CDPAlarm/.test(line) && nameWord.test(line)) {
                     toRemove.push(i);
                 }
-                if (fileType === 'source' && line.includes(`${codeName}.Create(`)) {
+                if (fileType === 'source' && new RegExp(`\\b${codeName}\\.Create\\(`).test(line)) {
                     toRemove.push(i);
                 }
                 break;
             case 'Property':
-                if (fileType === 'header' && /CDPProperty<.*>/.test(line) && line.includes(codeName)) {
+                if (fileType === 'header' && /CDPProperty<.*>/.test(line) && nameWord.test(line)) {
                     toRemove.push(i);
                 }
-                if (fileType === 'source' && line.includes(`${codeName}.Create(`)) {
+                if (fileType === 'source' && new RegExp(`\\b${codeName}\\.Create\\(`).test(line)) {
                     toRemove.push(i);
                 }
                 break;
             case 'Connector':
-                if (fileType === 'header' && /CDPConnector/.test(line) && line.includes(codeName)) {
+                if (fileType === 'header' && /CDPConnector/.test(line) && nameWord.test(line)) {
                     toRemove.push(i);
                 }
-                if (fileType === 'source' && line.includes(`${codeName}.Create(`)) {
+                if (fileType === 'source' && new RegExp(`\\b${codeName}\\.Create\\(`).test(line)) {
                     toRemove.push(i);
                 }
                 break;
