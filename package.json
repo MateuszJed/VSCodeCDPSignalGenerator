@@ -1,0 +1,76 @@
+{
+  "name": "cdp-codegen",
+  "displayName": "CDP Code Generator",
+  "description": "Code generator for CDP Studio CDPComponent classes - add/remove/change Signals, Parameters, Alarms, Properties, Connectors, States, StateTransitions, Messages, and Ports",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onLanguage:cpp",
+    "onLanguage:c"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      { "command": "cdp.addSignal", "title": "CDP: Add Signal" },
+      { "command": "cdp.addParameter", "title": "CDP: Add Parameter" },
+      { "command": "cdp.addAlarm", "title": "CDP: Add Alarm" },
+      { "command": "cdp.addProperty", "title": "CDP: Add Property" },
+      { "command": "cdp.addConnector", "title": "CDP: Add Connector" },
+      { "command": "cdp.addState", "title": "CDP: Add State" },
+      { "command": "cdp.addStateTransition", "title": "CDP: Add State Transition" },
+      { "command": "cdp.addMessage", "title": "CDP: Add Message" },
+      { "command": "cdp.addPort", "title": "CDP: Add Port" },
+      { "command": "cdp.remove", "title": "CDP: Remove Element" },
+      { "command": "cdp.change", "title": "CDP: Change Element" }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "cdp.add",
+          "group": "cdp@1",
+          "when": "resourceLangId == cpp || resourceExtname == .h"
+        },
+        {
+          "command": "cdp.remove",
+          "group": "cdp@2",
+          "when": "resourceLangId == cpp || resourceExtname == .h"
+        },
+        {
+          "command": "cdp.change",
+          "group": "cdp@3",
+          "when": "resourceLangId == cpp || resourceExtname == .h"
+        }
+      ],
+      "cdp.add": [
+        { "command": "cdp.addSignal", "group": "1_members@1" },
+        { "command": "cdp.addParameter", "group": "1_members@2" },
+        { "command": "cdp.addAlarm", "group": "1_members@3" },
+        { "command": "cdp.addProperty", "group": "1_members@4" },
+        { "command": "cdp.addConnector", "group": "1_members@5" },
+        { "command": "cdp.addState", "group": "2_model@1" },
+        { "command": "cdp.addStateTransition", "group": "2_model@2" },
+        { "command": "cdp.addMessage", "group": "2_model@3" },
+        { "command": "cdp.addPort", "group": "3_port@1" }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "cdp.add",
+        "label": "CDP: Add"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "npx @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.3.0"
+  }
+}
