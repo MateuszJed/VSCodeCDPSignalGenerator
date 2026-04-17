@@ -23,11 +23,18 @@ export function generateCode(element: ElementInfo, className: string, headerInde
   }
 }
 
+function makeComment(el: ElementInfo): string {
+  const parts: string[] = [];
+  if (el.unit) { parts.push(`[${el.unit}]`); }
+  if (el.description) { parts.push(el.description); }
+  return parts.length > 0 ? `  // ${parts.join('  ')}` : '';
+}
+
 function generateSignal(el: ElementInfo, hi: string, si: string): GeneratedCode {
   const t = el.type || 'double';
   return {
     headerDecl: `${hi}CDPSignal<${t}> ${el.codeName};`,
-    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this);`,
+    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this);${makeComment(el)}`,
     createModelCall: '',
     functionBodies: '',
     include: '<Signal/CDPSignal.h>',
@@ -37,7 +44,7 @@ function generateSignal(el: ElementInfo, hi: string, si: string): GeneratedCode 
 function generateParameter(el: ElementInfo, hi: string, si: string): GeneratedCode {
   return {
     headerDecl: `${hi}CDPParameter ${el.codeName};`,
-    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this);`,
+    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this);${makeComment(el)}`,
     createModelCall: '',
     functionBodies: '',
     include: '<CDPParameter/CDPParameter.h>',
@@ -47,7 +54,7 @@ function generateParameter(el: ElementInfo, hi: string, si: string): GeneratedCo
 function generateAlarm(el: ElementInfo, hi: string, si: string): GeneratedCode {
   return {
     headerDecl: `${hi}CDPAlarm ${el.codeName};`,
-    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this);`,
+    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this);${makeComment(el)}`,
     createModelCall: '',
     functionBodies: '',
     include: '<CDPAlarm/CDPAlarm.h>',
@@ -58,7 +65,7 @@ function generateProperty(el: ElementInfo, hi: string, si: string): GeneratedCod
   const t = el.type || 'double';
   return {
     headerDecl: `${hi}CDPProperty<${t}> ${el.codeName};`,
-    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this, CDPPropertyBase::e_Element);`,
+    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this, CDPPropertyBase::e_Element);${makeComment(el)}`,
     createModelCall: '',
     functionBodies: '',
     include: '<CDPSystem/Base/CDPProperty.h>',
@@ -68,7 +75,7 @@ function generateProperty(el: ElementInfo, hi: string, si: string): GeneratedCod
 function generateConnector(el: ElementInfo, hi: string, si: string): GeneratedCode {
   return {
     headerDecl: `${hi}CDPConnector ${el.codeName};`,
-    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this);`,
+    createCall: `${si}${el.codeName}.Create("${el.xmlName}", this);${makeComment(el)}`,
     createModelCall: '',
     functionBodies: '',
     include: '<CDPSystem/Base/CDPConnector.h>',
