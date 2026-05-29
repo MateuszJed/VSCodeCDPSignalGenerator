@@ -3,8 +3,10 @@ import { ElementKind } from './types';
 import { parseClass } from './parser';
 import { addElement, removeElement, changeElement } from './inserter';
 import { promptForNewElement, promptSelectElement, promptForChange } from './ui';
+import { setContext } from './runner';
 
 export function activate(context: vscode.ExtensionContext) {
+  setContext(context);
   const addCommands: [string, ElementKind][] = [
     ['cdp.addSignal', 'Signal'],
     ['cdp.addParameter', 'Parameter'],
