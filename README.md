@@ -105,3 +105,30 @@ sh install.sh
 ```
 
 After making changes to the CLI, always re-run `install.sh` to update the installed extension.
+
+---
+
+## Using the CLI as a GitHub Copilot skill
+
+The CLI can also be called by GitHub Copilot (via a skill) so you can ask Copilot in chat to add/remove/rename CDP elements without going through the VS Code Command Palette.
+
+### Setup
+
+The skill definition lives in your C++ component repository under `.github/skills/cdp-element/SKILL.md`. It tells Copilot to call this CLI.
+
+**Prerequisite:** The CLI must be compiled (`cli/dist/main.js` must exist). Run `sh install.sh` once, or just `cd cli && npm run compile`.
+
+### Usage
+
+With the skill installed, you can ask Copilot things like:
+
+> *"add a bool input signal called i_Enable to HoistControl"*
+> *"remove the signal SpeedIn from InputShaper"*
+> *"rename signal OldName to NewName in CraneCtrl"*
+
+Copilot will run the CLI in a terminal and update all three files (`.h`, `.cpp`, XML template) automatically.
+
+### Pointing the skill to this CLI
+
+The skill file references the absolute path to `cli/dist/main.js`. If you move this repository, update the path in `.github/skills/cdp-element/SKILL.md` in your component repository.
+
