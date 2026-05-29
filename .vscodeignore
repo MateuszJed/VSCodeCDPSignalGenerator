@@ -4,3 +4,7 @@ src/**
 tsconfig.json
 **/*.ts
 **/*.map
+cli/src/**
+cli/node_modules/**
+cli/tsconfig.json
+cli/dist/**/*.d.ts
