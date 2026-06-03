@@ -2,14 +2,18 @@
   "name": "cdp-codegen",
   "displayName": "CDP Code Generator",
   "description": "Code generator for CDP Studio CDPComponent classes - add/remove/change Signals, Parameters, Alarms, Properties, Connectors, States, StateTransitions, Messages, and Ports",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": ["Other"],
   "activationEvents": [
     "onLanguage:cpp",
-    "onLanguage:c"
+    "onLanguage:c",
+    "onLanguage:xml",
+    "workspaceContains:**/Application/Application.xml",
+    "onCommand:cdp.rebuildRoutingIndex",
+    "onCommand:cdp.showRoutingIndexStats"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -24,7 +28,12 @@
       { "command": "cdp.addMessage", "title": "CDP: Add Message" },
       { "command": "cdp.addPort", "title": "CDP: Add Port" },
       { "command": "cdp.remove", "title": "CDP: Remove Element" },
-      { "command": "cdp.change", "title": "CDP: Change Element" }
+      { "command": "cdp.change", "title": "CDP: Change Element" },
+      { "command": "cdp.rebuildRoutingIndex", "title": "CDP: Rebuild Routing Index" },
+      { "command": "cdp.validateRoutingCurrentFile", "title": "CDP: Validate Routing In Current File" },
+      { "command": "cdp.validateRoutingWorkspace", "title": "CDP: Validate Routing In Workspace" },
+      { "command": "cdp.showRoutingTarget", "title": "CDP: Show Routing Target" },
+      { "command": "cdp.showRoutingIndexStats", "title": "CDP: Show Routing Index Stats" }
     ],
     "menus": {
       "editor/context": [
@@ -61,12 +70,84 @@
         "id": "cdp.add",
         "label": "CDP: Add"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "CDP Routing",
+      "properties": {
+        "cdp.routing.validation.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable CDP XML routing validation."
+        },
+        "cdp.routing.validation.strict": {
+          "type": "boolean",
+          "default": false,
+          "description": "Treat unresolved local routing targets as warnings when possible. Default is conservative to avoid false errors."
+        },
+        "cdp.routing.validation.treatExternalAsError": {
+          "type": "boolean",
+          "default": false,
+          "description": "Report external application routing as errors."
+        },
+        "cdp.routing.validation.treatModelInheritedAsError": {
+          "type": "boolean",
+          "default": false,
+          "description": "Report model/library-inherited routing targets as errors."
+        },
+        "cdp.routing.navigation.goToNearestParentForModelInherited": {
+          "type": "boolean",
+          "default": true,
+          "description": "For model-inherited targets, Go to Definition opens the nearest known parent element."
+        },
+        "cdp.routing.index.followSrc": {
+          "type": "boolean",
+          "default": true,
+          "description": "Follow CDP XML src references while building routing index."
+        },
+        "cdp.routing.index.includeAllXmlFilesFallback": {
+          "type": "boolean",
+          "default": true,
+          "description": "Also parse XML files not reached from Application.xml for best-effort hover/navigation, but do not emit red diagnostics for files with unknown context."
+        },
+        "cdp.routing.decorations.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable color decorations on CDP routing attribute values in XML files."
+        },
+        "cdp.routing.decorations.resolvedColor": {
+          "type": "string",
+          "default": "#00BFFF",
+          "description": "Color for resolved routing values (bright cyan — link-like)."
+        },
+        "cdp.routing.decorations.invalidColor": {
+          "type": "string",
+          "default": "#F44747",
+          "description": "Color for invalid routing values (red wavy)."
+        },
+        "cdp.routing.decorations.unresolvedColor": {
+          "type": "string",
+          "default": "#FF5722",
+          "description": "Color for genuinely unresolved routing values (red-orange dotted — not usable)."
+        },
+        "cdp.routing.decorations.modelInheritedColor": {
+          "type": "string",
+          "default": "#D7BA7D",
+          "description": "Color for model/library-inherited routing values (gold dotted)."
+        },
+        "cdp.routing.decorations.externalColor": {
+          "type": "string",
+          "default": "#B180D7",
+          "description": "Color for external application routing values (purple dotted)."
+        }
+      }
+    }
   },
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "package": "npx @vscode/vsce package --no-dependencies"
+    "package": "npx @vscode/vsce package --no-dependencies",
+    "verify-routing": "node scripts/verify-routing.js",
+    "verify-routing:golden": "node scripts/verify-routing.js /home/andmid04/systems/3dCraneBacklash"
   },
   "devDependencies": {
     "@types/vscode": "^1.80.0",

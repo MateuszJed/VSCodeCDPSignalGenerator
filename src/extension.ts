@@ -4,9 +4,15 @@ import { parseClass } from './parser';
 import { addElement, removeElement, changeElement } from './inserter';
 import { promptForNewElement, promptSelectElement, promptForChange } from './ui';
 import { setContext } from './runner';
+import { activateRoutingSupport } from './routing/vscode/routingController';
 
 export function activate(context: vscode.ExtensionContext) {
   setContext(context);
+
+  // CDP XML routing validation and navigation
+  activateRoutingSupport(context).catch((err) => {
+    console.error('CDP Routing activation error:', err);
+  });
   const addCommands: [string, ElementKind][] = [
     ['cdp.addSignal', 'Signal'],
     ['cdp.addParameter', 'Parameter'],
