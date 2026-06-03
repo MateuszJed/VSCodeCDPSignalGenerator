@@ -3,6 +3,7 @@ import { CdpProjectIndexer } from "../core/cdpProjectIndexer";
 import { RoutingHoverProvider } from "./routingHoverProvider";
 import { RoutingDefinitionProvider } from "./routingDefinitionProvider";
 import { registerRoutingCommands } from "./routingCommands";
+import { registerCdpPathCommands } from "./cdpPathCommands";
 import { refreshDiagnostics } from "./routingDiagnostics";
 import { CdpProjectIndex } from "../core/types";
 import { computeRoutingStats } from "../core/routingStats";
@@ -13,6 +14,11 @@ import {
   applyDecorationsToEditor,
   RoutingDecorationTypes,
 } from "./routingDecorations";
+import {
+  createNameDecorationType,
+  applyNameDecorationsToEditor,
+  applyNameDecorationsToAllVisible,
+} from "./xmlNameDecorations";
 
 export async function activateRoutingSupport(
   context: vscode.ExtensionContext
@@ -28,6 +34,8 @@ export async function activateRoutingSupport(
   let index: CdpProjectIndex | null = null;
   let decorTypes: RoutingDecorationTypes = createDecorationTypes();
   context.subscriptions.push({ dispose: () => disposeDecorationTypes(decorTypes) });
+  let nameDecorType = createNameDecorationType();
+  context.subscriptions.push({ dispose: () => nameDecorType.dispose() });
 
   let rebuildTimer: ReturnType<typeof setTimeout> | undefined;
   const liveRefreshTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -39,6 +47,7 @@ export async function activateRoutingSupport(
     computeRoutingStats(index);
     refreshDiagnostics(index, diagnostics);
     applyDecorationsToAllVisible(index, decorTypes);
+    applyNameDecorationsToAllVisible(nameDecorType);
   }
 
   function scheduleRebuild(): void {
@@ -64,6 +73,7 @@ export async function activateRoutingSupport(
         for (const editor of vscode.window.visibleTextEditors) {
           if (editor.document.uri.fsPath === key) {
             applyDecorationsToEditor(editor, index, decorTypes);
+            applyNameDecorationsToEditor(editor, nameDecorType);
           }
         }
       }, 150)
@@ -111,6 +121,7 @@ export async function activateRoutingSupport(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
       if (editor && editor.document.fileName.endsWith(".xml")) {
         applyDecorationsToEditor(editor, index, decorTypes);
+        applyNameDecorationsToEditor(editor, nameDecorType);
         if (index) {
           refreshDiagnostics(index, diagnostics, [editor.document]);
         }
@@ -123,6 +134,7 @@ export async function activateRoutingSupport(
       for (const editor of editors) {
         if (editor.document.fileName.endsWith(".xml")) {
           applyDecorationsToEditor(editor, index, decorTypes);
+          applyNameDecorationsToEditor(editor, nameDecorType);
         }
       }
     })
@@ -155,6 +167,11 @@ export async function activateRoutingSupport(
         decorTypes = createDecorationTypes();
         applyDecorationsToAllVisible(index, decorTypes);
       }
+      if (e.affectsConfiguration("cdp.xml.decorations")) {
+        nameDecorType.dispose();
+        nameDecorType = createNameDecorationType();
+        applyNameDecorationsToAllVisible(nameDecorType);
+      }
     })
   );
 
@@ -165,4 +182,6 @@ export async function activateRoutingSupport(
     diagnostics,
     outputChannel
   );
+
+  registerCdpPathCommands(context, () => index);
 }

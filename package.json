@@ -13,7 +13,13 @@
     "onLanguage:xml",
     "workspaceContains:**/Application/Application.xml",
     "onCommand:cdp.rebuildRoutingIndex",
-    "onCommand:cdp.showRoutingIndexStats"
+    "onCommand:cdp.showRoutingIndexStats",
+    "onCommand:cdp.copyPath",
+    "onCommand:cdp.copyAbsolutePath",
+    "onCommand:cdp.copyRelativePath",
+    "onCommand:cdp.copyRoutingValue",
+    "onCommand:cdp.copyRoutingFromContext",
+    "onCommand:cdp.pasteAsRouting"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -33,7 +39,13 @@
       { "command": "cdp.validateRoutingCurrentFile", "title": "CDP: Validate Routing In Current File" },
       { "command": "cdp.validateRoutingWorkspace", "title": "CDP: Validate Routing In Workspace" },
       { "command": "cdp.showRoutingTarget", "title": "CDP: Show Routing Target" },
-      { "command": "cdp.showRoutingIndexStats", "title": "CDP: Show Routing Index Stats" }
+      { "command": "cdp.showRoutingIndexStats", "title": "CDP: Show Routing Index Stats" },
+      { "command": "cdp.copyPath", "title": "CDP: Copy Path" },
+      { "command": "cdp.copyAbsolutePath", "title": "CDP: Copy Absolute Path" },
+      { "command": "cdp.copyRelativePath", "title": "CDP: Copy Relative Path From Current Context" },
+      { "command": "cdp.copyRoutingValue", "title": "CDP: Copy Routing Value" },
+      { "command": "cdp.copyRoutingFromContext", "title": "CDP: Copy Routing From Current Context" },
+      { "command": "cdp.pasteAsRouting", "title": "CDP: Paste As Routing" }
     ],
     "menus": {
       "editor/context": [
@@ -51,6 +63,26 @@
           "command": "cdp.change",
           "group": "cdp@3",
           "when": "resourceLangId == cpp || resourceExtname == .h"
+        },
+        {
+          "command": "cdp.copyPath",
+          "group": "cdp_xml@1",
+          "when": "resourceExtname == .xml"
+        },
+        {
+          "command": "cdp.copyAbsolutePath",
+          "group": "cdp_xml@2",
+          "when": "resourceExtname == .xml"
+        },
+        {
+          "command": "cdp.copyRoutingValue",
+          "group": "cdp_xml@3",
+          "when": "resourceExtname == .xml"
+        },
+        {
+          "command": "cdp.pasteAsRouting",
+          "group": "cdp_xml@4",
+          "when": "resourceExtname == .xml"
         }
       ],
       "cdp.add": [
@@ -138,6 +170,21 @@
           "type": "string",
           "default": "#B180D7",
           "description": "Color for external application routing values (purple dotted)."
+        },
+        "cdp.xml.decorations.names.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight the value of Name=\"...\" attributes in CDP XML files."
+        },
+        "cdp.xml.decorations.nameColor": {
+          "type": "string",
+          "default": "#C5E478",
+          "description": "Color for CDP Name attribute values (yellow-green, easy to spot in large XML files)."
+        },
+        "cdp.xml.decorations.nameFontWeight": {
+          "type": "string",
+          "default": "bold",
+          "description": "Font weight for CDP Name attribute values (e.g. \"bold\" or \"normal\")."
         }
       }
     }
