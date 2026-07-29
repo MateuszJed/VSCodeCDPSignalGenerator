@@ -224,12 +224,16 @@ function createProjectTar(srcDir: string, outDir: string, datePart: string): str
 // Main
 // ────────────────────────────────────────────────────────────────────────────
 async function main(): Promise<void> {
-  const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-  const flags = new Set(process.argv.slice(2).filter((a) => a.startsWith("--")));
+  const rawArgs = process.argv.slice(2);
+  const flags = new Set(rawArgs.filter((a) => a.startsWith("--")));
+  const positional = rawArgs.filter((a) => !a.startsWith("--"));
 
-  const workspacePath = args[0];
+  const workspacePath = positional[0];
   if (!workspacePath) {
-    console.error("Usage: node out/routing/cli/verifyRouting.js <workspace-path> [--no-build]");
+    console.error(
+      "Usage: node out/routing/cli/verifyRouting.js <workspace-path> [--no-build] [--json]\n" +
+      "       node out/routing/cli/verifyRouting.js <workspace-path> resolve <routing> <contextPath> [--json]"
+    );
     process.exit(1);
   }
 
@@ -239,38 +243,107 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // 1. Build extension + CLI + package VSIX (skip if bootstrap already did it)
   const skipBuild = flags.has("--no-build");
+  const jsonMode  = flags.has("--json");
+  const subcommand = positional[1]; // e.g. "resolve"
+
+  // ── resolve subcommand ──────────────────────────────────────────────────
+  // Usage: verifyRouting.js <workspace> resolve <routing> <contextPath> [--json]
+  if (subcommand === "resolve") {
+    const routing     = positional[2];
+    const contextPath = positional[3];
+    if (!routing || !contextPath) {
+      console.error("Usage: ... resolve <routing> <contextPath>");
+      process.exit(1);
+    }
+
+    const indexer = new CdpProjectIndexer({ appendLine: () => undefined });
+    const index   = await indexer.buildIndex([absWorkspace]);
+    const { resolveRouting } = await import("../core/routingResolver");
+    const result = resolveRouting(routing, contextPath, index, true);
+
+    if (jsonMode) {
+      process.stdout.write(JSON.stringify({ routing, contextPath, result }, null, 2) + "\n");
+    } else {
+      switch (result.status) {
+        case "resolved":
+          console.log(`RESOLVED: ${result.resolvedPath}`);
+          console.log(`  File: ${result.target.filePath}`);
+          break;
+        case "unresolved":
+          console.log(`UNRESOLVED: candidate=${result.candidatePath}`);
+          console.log(`  Reason: ${result.reason}`);
+          break;
+        case "model-inherited":
+          console.log(`MODEL-INHERITED: candidate=${result.candidatePath}`);
+          console.log(`  Nearest parent: ${result.nearestKnownParent.fullPath}`);
+          break;
+        case "external":
+          console.log(`EXTERNAL: app=${result.externalApplication}`);
+          break;
+        case "invalid":
+          console.log(`INVALID: ${result.reason}`);
+          break;
+        case "empty":
+          console.log("EMPTY routing.");
+          break;
+      }
+    }
+    process.exit(result.status === "resolved" ? 0 : 1);
+  }
+
+  // ── full validation ─────────────────────────────────────────────────────
+  // 1. Build extension + CLI + package VSIX (skip if bootstrap already did it)
   let build: BuildResult;
   if (skipBuild) {
-    console.log("Build: skipped (--no-build flag, bootstrap already compiled).");
-    build = { success: true, log: "Build performed by scripts/verify-routing.js bootstrap." };
+    if (!jsonMode) console.log("Build: skipped (--no-build).");
+    build = { success: true, log: "Skipped." };
   } else {
-    console.log("Building extension + CLI + packaging VSIX...");
+    if (!jsonMode) console.log("Building extension + CLI + packaging VSIX...");
     build = buildAll();
   }
-  if (!build.success) {
+  if (!build.success && !jsonMode) {
     console.error("Build failed — report will still be written but VSIX check may fail.");
   }
 
   // 2. Build routing index
-  const indexer = new CdpProjectIndexer({ appendLine: (m) => console.log(`  ${m}`) });
-  console.log(`\nBuilding routing index for: ${absWorkspace}`);
+  const indexer = new CdpProjectIndexer({
+    appendLine: (m) => { if (!jsonMode) console.log(`  ${m}`); },
+  });
+  if (!jsonMode) console.log(`\nBuilding routing index for: ${absWorkspace}`);
   const index = await indexer.buildIndex([absWorkspace]);
 
   // 3. Compute stats and analyse
   computeRoutingStats(index);
   const analysis = analyseRoutings(index);
 
-  console.log(`  Resolved:        ${index.stats.resolvedRoutings}`);
-  console.log(`  Model-inherited: ${index.stats.modelInheritedRoutings}`);
-  console.log(`  Unresolved:      ${index.stats.unresolvedRoutings}`);
-  console.log(`  Invalid:         ${index.stats.invalidRoutings}`);
-  console.log(`  Errors (red):    ${analysis.errors.length}`);
+  if (!jsonMode) {
+    console.log(`  Resolved:        ${index.stats.resolvedRoutings}`);
+    console.log(`  Model-inherited: ${index.stats.modelInheritedRoutings}`);
+    console.log(`  Unresolved:      ${index.stats.unresolvedRoutings}`);
+    console.log(`  Invalid:         ${index.stats.invalidRoutings}`);
+    console.log(`  Errors (red):    ${analysis.errors.length}`);
+  }
 
+  // ── JSON mode: output to stdout and exit ─────────────────────────────────
+  if (jsonMode) {
+    const out = {
+      timestamp: new Date().toISOString(),
+      workspace: absWorkspace,
+      stats: index.stats,
+      unresolved: analysis.unresolved,
+      errors: analysis.errors,
+      modelInheritedCount: analysis.modelInherited.length,
+      resolvedCount: analysis.resolved.length,
+    };
+    process.stdout.write(JSON.stringify(out, null, 2) + "\n");
+    process.exit(analysis.errors.length === 0 && analysis.unresolved.length === 0 ? 0 : 1);
+  }
+
+  // ── Full report mode (original behaviour) ────────────────────────────────
   // 4. VSIX + git info
   const vsixInfo = checkVsixBundle();
-  const gitInfo = getGitInfo(absWorkspace);
+  const gitInfo  = getGitInfo(absWorkspace);
 
   // 5. Compute overall pass/fail
   const routingPass = analysis.errors.length === 0;

@@ -19,7 +19,8 @@
     "onCommand:cdp.copyRelativePath",
     "onCommand:cdp.copyRoutingValue",
     "onCommand:cdp.copyRoutingFromContext",
-    "onCommand:cdp.pasteAsRouting"
+    "onCommand:cdp.pasteAsRouting",
+    "onCommand:cdp.openBlockDiagramView"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -45,7 +46,11 @@
       { "command": "cdp.copyRelativePath", "title": "CDP: Copy Relative Path From Current Context" },
       { "command": "cdp.copyRoutingValue", "title": "CDP: Copy Routing Value" },
       { "command": "cdp.copyRoutingFromContext", "title": "CDP: Copy Routing From Current Context" },
-      { "command": "cdp.pasteAsRouting", "title": "CDP: Paste As Routing" }
+      { "command": "cdp.pasteAsRouting", "title": "CDP: Paste As Routing" },
+      { "command": "cdp.openBlockDiagramView", "title": "CDP: Open Block Diagram View" },
+      { "command": "cdp.exportValidation", "title": "CDP: Export Validation Report" },
+      { "command": "cdp.resolveRoutingString", "title": "CDP: Resolve Routing String" },
+      { "command": "cdp.getIndexedPaths", "title": "CDP: Get Indexed Paths" }
     ],
     "menus": {
       "editor/context": [
@@ -82,6 +87,11 @@
         {
           "command": "cdp.pasteAsRouting",
           "group": "cdp_xml@4",
+          "when": "resourceExtname == .xml"
+        },
+        {
+          "command": "cdp.openBlockDiagramView",
+          "group": "cdp_xml@5",
           "when": "resourceExtname == .xml"
         }
       ],

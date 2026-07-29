@@ -1,11 +1,15 @@
+import * as fs from "fs";
+import * as path from "path";
 import * as vscode from "vscode";
 import { CdpProjectIndex } from "../core/types";
 import { resolveRouting } from "../core/routingResolver";
+import { analyseRoutings } from "../core/routingStats";
 import { refreshDiagnostics } from "./routingDiagnostics";
 import { parseXml } from "../core/xmlScanner";
 import { collectRoutingOccurrences } from "../core/routingAttributeParser";
 import { containsPosition } from "./rangeAdapter";
 import { findLiveOccurrenceAtPosition } from "./liveDocumentScanner";
+import { BlockDiagramPanel } from "./blockDiagramPanel";
 
 export function registerRoutingCommands(
   context: vscode.ExtensionContext,
@@ -218,5 +222,105 @@ export function registerRoutingCommands(
       outputChannel.appendLine(lines.join("\n"));
       outputChannel.show();
     })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("cdp.openBlockDiagramView", () => {
+      BlockDiagramPanel.createOrShow(context, getIndex);
+    })
+  );
+
+  // ── CDP: Export Validation (agent-accessible) ─────────────────────────────
+  // Writes a .cdp-validation.json to the workspace root.
+  // Copilot agent can read it with read_file after running this command.
+  context.subscriptions.push(
+    vscode.commands.registerCommand("cdp.exportValidation", async () => {
+      const index = getIndex();
+      if (!index) {
+        vscode.window.showWarningMessage(
+          "CDP routing index is not built. Run 'CDP: Rebuild Routing Index' first."
+        );
+        return;
+      }
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      if (!workspaceRoot) {
+        vscode.window.showWarningMessage("CDP: No workspace folder found.");
+        return;
+      }
+      const analysis = analyseRoutings(index);
+      const report = {
+        timestamp: new Date().toISOString(),
+        stats: index.stats,
+        unresolved: analysis.unresolved,
+        errors: analysis.errors,
+        modelInheritedCount: analysis.modelInherited.length,
+        resolvedCount: analysis.resolved.length,
+      };
+      const outPath = path.join(workspaceRoot, ".cdp-validation.json");
+      fs.writeFileSync(outPath, JSON.stringify(report, null, 2), "utf-8");
+      vscode.window.showInformationMessage(
+        `CDP validation exported to .cdp-validation.json` +
+        ` (${analysis.unresolved.length} unresolved, ${analysis.errors.length} errors)`
+      );
+    })
+  );
+
+  // ── CDP: Resolve Routing String (agent-accessible) ────────────────────────
+  // Accepts (routing, contextPath) args — can be called by agent via executeCommand.
+  // Result is logged to output channel and returned to the caller.
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "cdp.resolveRoutingString",
+      (routing: string, contextPath: string) => {
+        const index = getIndex();
+        if (!index) {
+          vscode.window.showWarningMessage(
+            "CDP routing index is not built. Run 'CDP: Rebuild Routing Index' first."
+          );
+          return null;
+        }
+        const resolution = resolveRouting(routing, contextPath, index, true);
+        const result = { routing, contextPath, resolution };
+        outputChannel.appendLine(`[resolve] ${JSON.stringify(result)}`);
+        outputChannel.show();
+        return result;
+      }
+    )
+  );
+
+  // ── CDP: Get Indexed Paths (agent-accessible) ─────────────────────────────
+  // Accepts optional query string. Writes matching CDP paths to .cdp-paths.json.
+  // Agent can pass a substring to filter (e.g. "DanfossiC7FC", "HoistWinch").
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "cdp.getIndexedPaths",
+      async (query?: string) => {
+        const index = getIndex();
+        if (!index) {
+          vscode.window.showWarningMessage(
+            "CDP routing index is not built. Run 'CDP: Rebuild Routing Index' first."
+          );
+          return [];
+        }
+        const allPaths = [...index.entriesByFullPath.keys()];
+        const filtered = query
+          ? allPaths.filter((p) => p.toLowerCase().includes(query.toLowerCase()))
+          : allPaths;
+        const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        if (workspaceRoot) {
+          const out = { query: query ?? null, count: filtered.length, paths: filtered };
+          fs.writeFileSync(
+            path.join(workspaceRoot, ".cdp-paths.json"),
+            JSON.stringify(out, null, 2),
+            "utf-8"
+          );
+        }
+        outputChannel.appendLine(
+          `[paths] query="${query ?? ""}" found=${filtered.length}`
+        );
+        outputChannel.show();
+        return filtered;
+      }
+    )
   );
 }
